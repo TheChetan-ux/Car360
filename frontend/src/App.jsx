@@ -7,6 +7,7 @@ import SellCar from "./pages/SellCar";
 import AuctionPage from "./pages/AuctionPage";
 import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
+import CheckoutPage from "./pages/CheckoutPage";
 import NotFound from "./pages/NotFound";
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
         <Route path="/auctions" element={<AuctionPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
@@ -27,4 +29,3 @@ function App() {
 }
 
 export default App;
-

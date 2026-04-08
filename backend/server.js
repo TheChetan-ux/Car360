@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
+import mongoose from "mongoose";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import carRoutes from "./routes/carRoutes.js";
@@ -13,8 +14,6 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-connectDB();
-
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "http://localhost:5173",
@@ -24,7 +23,18 @@ app.use(
 app.use(express.json());
 
 app.get("/api/health", (_req, res) => {
-  res.json({ success: true, message: "Car360 API is running" });
+  const readyStates = {
+    0: "disconnected",
+    1: "connected",
+    2: "connecting",
+    3: "disconnecting",
+  };
+
+  res.json({
+    success: true,
+    message: "Car360 API is running",
+    database: readyStates[mongoose.connection.readyState] || "unknown",
+  });
 });
 
 app.use("/api/auth", authRoutes);
@@ -35,7 +45,15 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`Car360 API running on port ${PORT}`);
-});
+const startServer = async () => {
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`Car360 API running on port ${PORT}`);
+    });
+  } catch (_error) {
+    process.exit(1);
+  }
+};
 
+startServer();

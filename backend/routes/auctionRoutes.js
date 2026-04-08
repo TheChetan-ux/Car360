@@ -4,8 +4,7 @@ import { allowRoles, protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/:carId/bid", protect, allowRoles("buyer", "dealer", "admin"), placeBid);
+router.post("/:carId/bid", protect, allowRoles("buyer", "seller", "dealer", "admin"), placeBid);
 router.get("/:carId/highest", getHighestBid);
 
 export default router;
-

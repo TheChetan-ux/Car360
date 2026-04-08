@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Button from "../components/Button";
 import Loader from "../components/Loader";
 import { useAuth } from "../context/AuthContext";
-import { getCarById, getHighestBid, placeBid, purchaseCar } from "../services/api";
+import { getCarById, getHighestBid } from "../services/api";
 
 const formatPrice = (value) =>
   new Intl.NumberFormat("en-IN", {
@@ -14,6 +14,7 @@ const formatPrice = (value) =>
 
 function CarDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { token } = useAuth();
   const [car, setCar] = useState(null);
   const [highestBid, setHighestBid] = useState(null);
@@ -33,34 +34,46 @@ function CarDetails() {
     loadData();
   }, [id]);
 
-  const handleBuy = async () => {
+  const openCheckout = (type, amount) => {
+    const search = new URLSearchParams({
+      type,
+      carId: id,
+      amount: String(amount),
+    });
+
+    navigate(`/checkout?${search.toString()}`);
+  };
+
+  const handleBuy = () => {
     if (!token) {
       setMessage("Login as a buyer to continue with purchase.");
       return;
     }
 
-    try {
-      await purchaseCar(id, token);
-      setMessage("Purchase successful. Your order is now available in the dashboard.");
-    } catch (error) {
-      setMessage(error.response?.data?.message || "Purchase could not be completed.");
+    if (!car) {
+      setMessage("Car details are still loading.");
+      return;
     }
+
+    setMessage("");
+    openCheckout("buy", car.price);
   };
 
-  const handleBid = async () => {
+  const handleBid = () => {
     if (!token) {
       setMessage("Login to place a bid.");
       return;
     }
 
-    try {
-      const bid = await placeBid(id, Number(bidAmount), token);
-      setHighestBid(bid);
-      setBidAmount("");
-      setMessage("Bid placed successfully.");
-    } catch (error) {
-      setMessage(error.response?.data?.message || "Bid could not be placed.");
+    const normalizedAmount = Number(bidAmount);
+
+    if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+      setMessage("Enter a valid bid amount before continuing.");
+      return;
     }
+
+    setMessage("");
+    openCheckout("bid", normalizedAmount);
   };
 
   if (loading) {
@@ -93,7 +106,7 @@ function CarDetails() {
             <div>
               <h1 className="text-3xl font-semibold">{car.title}</h1>
               <p className="mt-2 muted">
-                {car.location} • {car.year} • {car.transmission} • {car.fuelType}
+                {car.location} - {car.year} - {car.transmission} - {car.fuelType}
               </p>
             </div>
             <p className="text-3xl font-semibold text-blue-400">{formatPrice(car.price)}</p>
@@ -114,7 +127,9 @@ function CarDetails() {
             </div>
           </div>
 
-          <p className="mt-8 leading-7 muted">{car.description || "A carefully maintained used car with premium road presence and a clean ownership trail."}</p>
+          <p className="mt-8 leading-7 muted">
+            {car.description || "A carefully maintained used car with premium road presence and a clean ownership trail."}
+          </p>
         </div>
       </section>
 
@@ -122,9 +137,9 @@ function CarDetails() {
         <div className="panel p-6">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-400">Buy now</p>
           <h2 className="mt-2 text-2xl font-semibold">Checkout-ready flow</h2>
-          <p className="mt-3 muted">Direct purchase marks the car as sold and adds an order to your dashboard.</p>
+          <p className="mt-3 muted">Review the vehicle, run a fake payment flow, and then confirm the purchase.</p>
           <Button onClick={handleBuy} className="mt-6 w-full">
-            Buy This Car
+            Continue to Checkout
           </Button>
         </div>
 
@@ -143,7 +158,7 @@ function CarDetails() {
               className="mt-5 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none"
             />
             <Button onClick={handleBid} className="mt-4 w-full">
-              Place Bid
+              Review Bid in Checkout
             </Button>
           </div>
         )}

@@ -13,8 +13,7 @@ const router = express.Router();
 router.get("/", getCars);
 router.get("/:id", getCarById);
 router.post("/", protect, allowRoles("seller", "dealer", "admin"), createCar);
-router.post("/:id/purchase", protect, allowRoles("buyer", "admin"), purchaseCar);
+router.post("/:id/purchase", protect, allowRoles("buyer", "seller", "dealer", "admin"), purchaseCar);
 router.delete("/:id", protect, deleteCar);
 
 export default router;
-
