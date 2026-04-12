@@ -25,14 +25,30 @@ function CarDetails() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      const [carData, highestBidData] = await Promise.all([getCarById(id), getHighestBid(id)]);
+      const [carData, highestBidData] = await Promise.all([getCarById(id, token), getHighestBid(id)]);
       setCar(carData);
       setHighestBid(highestBidData);
       setLoading(false);
     };
 
     loadData();
-  }, [id]);
+  }, [id, token]);
+
+  const inspectionStatus = car?.status || (car?.verified ? "verified" : "pending");
+  const documentStatus = car?.documentStatus || (inspectionStatus === "verified" ? "verified" : "pending");
+  const availabilityStatus = car?.availabilityStatus || "available";
+  const canTransact =
+    inspectionStatus === "verified" &&
+    documentStatus === "verified" &&
+    availabilityStatus === "available";
+  const transactionMessage =
+    documentStatus !== "verified"
+      ? "This vehicle is waiting for document verification, so purchase and bidding are disabled."
+      : inspectionStatus !== "verified"
+      ? "This vehicle is waiting for inspector approval, so purchase and bidding are disabled."
+      : availabilityStatus !== "available"
+        ? `This vehicle is currently ${availabilityStatus}, so checkout actions are disabled.`
+        : "";
 
   const openCheckout = (type, amount) => {
     const search = new URLSearchParams({
@@ -112,17 +128,21 @@ function CarDetails() {
             <p className="text-3xl font-semibold text-blue-400">{formatPrice(car.price)}</p>
           </div>
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-3xl bg-white/5 p-4">
               <p className="text-lg font-semibold">{(car.mileage || 0).toLocaleString()} km</p>
               <p className="muted text-sm">Driven</p>
             </div>
             <div className="rounded-3xl bg-white/5 p-4">
-              <p className="text-lg font-semibold">{car.verified ? "Yes" : "Pending"}</p>
-              <p className="muted text-sm">Verified</p>
+              <p className="text-lg font-semibold capitalize">{inspectionStatus}</p>
+              <p className="muted text-sm">Inspection</p>
             </div>
             <div className="rounded-3xl bg-white/5 p-4">
-              <p className="text-lg font-semibold">{car.status}</p>
+              <p className="text-lg font-semibold capitalize">{documentStatus}</p>
+              <p className="muted text-sm">Documents</p>
+            </div>
+            <div className="rounded-3xl bg-white/5 p-4">
+              <p className="text-lg font-semibold capitalize">{availabilityStatus}</p>
               <p className="muted text-sm">Availability</p>
             </div>
           </div>
@@ -137,8 +157,12 @@ function CarDetails() {
         <div className="panel p-6">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-400">Buy now</p>
           <h2 className="mt-2 text-2xl font-semibold">Checkout-ready flow</h2>
-          <p className="mt-3 muted">Review the vehicle, run a fake payment flow, and then confirm the purchase.</p>
-          <Button onClick={handleBuy} className="mt-6 w-full">
+          <p className="mt-3 muted">
+            {canTransact
+              ? "Review the vehicle, run a fake payment flow, and then confirm the purchase."
+              : transactionMessage}
+          </p>
+          <Button onClick={handleBuy} className="mt-6 w-full" disabled={!canTransact}>
             Continue to Checkout
           </Button>
         </div>
@@ -155,15 +179,20 @@ function CarDetails() {
               value={bidAmount}
               onChange={(e) => setBidAmount(e.target.value)}
               placeholder="Enter bid amount"
+              disabled={!canTransact}
               className="mt-5 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none"
             />
-            <Button onClick={handleBid} className="mt-4 w-full">
+            <Button onClick={handleBid} className="mt-4 w-full" disabled={!canTransact}>
               Review Bid in Checkout
             </Button>
           </div>
         )}
 
-        {message && <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm">{message}</div>}
+        {(message || transactionMessage) && (
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm">
+            {message || transactionMessage}
+          </div>
+        )}
       </aside>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
 import Loader from "../components/Loader";
 import { useAuth } from "../context/AuthContext";
 import { getAdminDashboard, getBuyerDashboard, getSellerDashboard } from "../services/api";
@@ -17,6 +18,8 @@ function Dashboard() {
         setData(await getBuyerDashboard(token));
       } else if (user.role === "admin") {
         setData(await getAdminDashboard(token));
+      } else if (user.role === "inspector") {
+        setData(null);
       } else {
         setData(await getSellerDashboard(token));
       }
@@ -32,10 +35,14 @@ function Dashboard() {
       <div className="shell">
         <div className="panel p-8">
           <h1 className="text-3xl font-semibold">Dashboard</h1>
-          <p className="mt-4 muted">Login to view role-based dashboard data for buyers, sellers, dealers, or admins.</p>
+          <p className="mt-4 muted">Login to view role-based dashboard data for buyers, sellers, dealers, admins, or inspectors.</p>
         </div>
       </div>
     );
+  }
+
+  if (user.role === "inspector") {
+    return <Navigate to="/inspector" replace />;
   }
 
   return (
@@ -78,7 +85,9 @@ function Dashboard() {
                   {(data?.cars || []).slice(0, 3).map((car) => (
                     <div key={car._id} className="rounded-2xl bg-white/5 p-3">
                       <p className="font-medium">{car.title}</p>
-                      <p className="muted text-sm">{car.status}</p>
+                      <p className="muted text-sm capitalize">
+                        {car.documentStatus || "pending"} documents | {car.status} inspection | {car.availabilityStatus || "available"}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -108,4 +117,3 @@ function Dashboard() {
 }
 
 export default Dashboard;
-

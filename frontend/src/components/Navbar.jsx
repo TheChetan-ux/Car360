@@ -42,9 +42,15 @@ function Navbar() {
           <NavLink to="/sell" className={navClass}>
             Sell Car
           </NavLink>
-          <NavLink to="/dashboard" className={navClass}>
-            Dashboard
-          </NavLink>
+          {user?.role === "inspector" ? (
+            <NavLink to="/inspector" className={navClass}>
+              Inspector
+            </NavLink>
+          ) : (
+            <NavLink to="/dashboard" className={navClass}>
+              Dashboard
+            </NavLink>
+          )}
         </nav>
 
         <div className="flex items-center gap-3">

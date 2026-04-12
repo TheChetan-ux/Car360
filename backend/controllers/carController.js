@@ -1,9 +1,18 @@
 import Car from "../models/Car.js";
-import Order from "../models/Order.js";
 import fallbackCars from "../data/fallbackCars.js";
+import { finalizeAuctionIfNeeded, finalizeAuctionsForCars } from "../utils/auctionUtils.js";
+import {
+  filterMarketplaceCars,
+  getAvailabilityStatus,
+  isListingApproved,
+  normalizeCar,
+  canViewCarDetails,
+} from "../utils/carState.js";
+import { createLog } from "../utils/logUtils.js";
+import { createMarketplaceOrder } from "../utils/orderUtils.js";
 
 const mapFilters = (query) => {
-  const filters = { status: "available" };
+  const filters = {};
 
   if (query.search) {
     filters.title = { $regex: query.search, $options: "i" };
@@ -26,15 +35,35 @@ const mapFilters = (query) => {
 
 export const createCar = async (req, res, next) => {
   try {
+    const auctionEndTime = req.body.isAuction
+      ? req.body.auctionEndTime || new Date(Date.now() + 1000 * 60 * 60 * 24)
+      : null;
+
     const car = await Car.create({
       ...req.body,
       owner: req.user._id,
-      verified: req.user.role === "dealer" || req.user.role === "admin",
+      documents: {
+        rc: "",
+        insurance: "",
+        idProof: "",
+      },
+      documentStatus: "pending",
+      status: "pending",
+      auctionEndTime,
+      auctionStatus: req.body.isAuction ? "active" : "ended",
+      availabilityStatus: "available",
+      verified: false,
+    });
+
+    await createLog({
+      action: "car created",
+      userId: req.user._id,
+      carId: car._id,
     });
 
     res.status(201).json({
       success: true,
-      car,
+      car: normalizeCar(car),
     });
   } catch (error) {
     next(error);
@@ -43,18 +72,20 @@ export const createCar = async (req, res, next) => {
 
 export const getCars = async (req, res, next) => {
   try {
-    const cars = await Car.find(mapFilters(req.query)).populate("owner", "name role");
+    const dbCars = await Car.find(mapFilters(req.query)).populate("owner", "name role");
+    const syncedCars = await finalizeAuctionsForCars(dbCars);
+    const cars = filterMarketplaceCars(syncedCars, req.user);
 
     res.json({
       success: true,
-      source: cars.length ? "database" : "fallback",
-      cars: cars.length ? cars : fallbackCars,
+      source: dbCars.length ? "database" : "fallback",
+      cars: dbCars.length ? cars : filterMarketplaceCars(fallbackCars, req.user),
     });
   } catch (error) {
     res.json({
       success: true,
       source: "fallback",
-      cars: fallbackCars,
+      cars: filterMarketplaceCars(fallbackCars, req.user),
     });
   }
 };
@@ -64,9 +95,18 @@ export const getCarById = async (req, res, next) => {
     const car = await Car.findById(req.params.id).populate("owner", "name role");
 
     if (car) {
+      const { car: syncedCar } = await finalizeAuctionIfNeeded(car);
+      const normalizedCar = normalizeCar(syncedCar);
+
+      if (!canViewCarDetails(req.user, normalizedCar)) {
+        const error = new Error("Car not found");
+        error.statusCode = 404;
+        throw error;
+      }
+
       return res.json({
         success: true,
-        car,
+        car: normalizedCar,
       });
     }
 
@@ -78,18 +118,24 @@ export const getCarById = async (req, res, next) => {
       throw error;
     }
 
+    if (!canViewCarDetails(req.user, fallbackCar)) {
+      const error = new Error("Car not found");
+      error.statusCode = 404;
+      throw error;
+    }
+
     res.json({
       success: true,
-      car: fallbackCar,
+      car: normalizeCar(fallbackCar),
       source: "fallback",
     });
   } catch (error) {
     const fallbackCar = fallbackCars.find((item) => item._id === req.params.id);
 
-    if (fallbackCar) {
+    if (fallbackCar && canViewCarDetails(req.user, fallbackCar)) {
       return res.json({
         success: true,
-        car: fallbackCar,
+        car: normalizeCar(fallbackCar),
         source: "fallback",
       });
     }
@@ -138,21 +184,46 @@ export const purchaseCar = async (req, res, next) => {
       throw error;
     }
 
-    if (car.status === "sold") {
-      const error = new Error("Car has already been sold");
+    await finalizeAuctionIfNeeded(car);
+
+    if (!isListingApproved(car)) {
+      const error = new Error("Car must have verified documents and inspection before purchase");
       error.statusCode = 400;
       throw error;
     }
 
-    const order = await Order.create({
-      buyer: req.user._id,
-      car: car._id,
-      amount: car.price,
-      paymentStatus: "paid",
+    const availabilityStatus = getAvailabilityStatus(car);
+
+    if (availabilityStatus !== "available") {
+      const error = new Error(
+        availabilityStatus === "sold"
+          ? "Car has already been sold"
+          : "Car is not available for purchase"
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const { order } = await createMarketplaceOrder({
+      buyerId: req.user._id,
+      carId: car._id,
+      finalPrice: car.price,
+      paymentStatus: "completed",
+      orderType: "direct",
     });
 
-    car.status = "sold";
+    if (car.isAuction) {
+      car.auctionStatus = "ended";
+      car.auctionEndTime = car.auctionEndTime || new Date();
+    }
+    car.availabilityStatus = "sold";
     await car.save();
+
+    await createLog({
+      action: "car purchased",
+      userId: req.user._id,
+      carId: car._id,
+    });
 
     res.status(201).json({
       success: true,

@@ -9,6 +9,9 @@ const formatPrice = (value) =>
   }).format(value);
 
 function CarCard({ car }) {
+  const inspectionStatus = car.status || (car.verified ? "verified" : "pending");
+  const availabilityStatus = car.availabilityStatus || "available";
+
   return (
     <article className="panel group overflow-hidden transition duration-300 hover:-translate-y-1 hover:shadow-2xl">
       <div className="relative h-60 overflow-hidden">
@@ -18,14 +21,24 @@ function CarCard({ car }) {
           className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
         />
         <div className="absolute left-4 top-4 flex gap-2">
-          {car.verified && (
+          {inspectionStatus === "verified" && (
             <span className="rounded-full bg-emerald-500/90 px-3 py-1 text-xs font-semibold text-white">
               Verified
+            </span>
+          )}
+          {inspectionStatus !== "verified" && (
+            <span className="rounded-full bg-amber-500/90 px-3 py-1 text-xs font-semibold text-white">
+              {inspectionStatus}
             </span>
           )}
           {car.isAuction && (
             <span className="rounded-full bg-violet-600/90 px-3 py-1 text-xs font-semibold text-white">
               Auction
+            </span>
+          )}
+          {availabilityStatus !== "available" && (
+            <span className="rounded-full bg-slate-900/80 px-3 py-1 text-xs font-semibold uppercase text-white">
+              {availabilityStatus}
             </span>
           )}
         </div>
@@ -66,4 +79,3 @@ function CarCard({ car }) {
 }
 
 export default CarCard;
-

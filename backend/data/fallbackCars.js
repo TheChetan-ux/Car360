@@ -18,7 +18,14 @@ const fallbackCars = [
       color: "Carbon Black",
       ownerCount: 1
     },
-    status: "available",
+    documents: {
+      rc: "",
+      insurance: "",
+      idProof: ""
+    },
+    documentStatus: "verified",
+    status: "verified",
+    availabilityStatus: "available",
     verified: true,
     isAuction: true,
     auctionEndsAt: new Date(Date.now() + 1000 * 60 * 60 * 18),
@@ -43,7 +50,14 @@ const fallbackCars = [
       color: "Pearl White",
       ownerCount: 1
     },
-    status: "available",
+    documents: {
+      rc: "",
+      insurance: "",
+      idProof: ""
+    },
+    documentStatus: "verified",
+    status: "verified",
+    availabilityStatus: "available",
     verified: true,
     isAuction: false,
     description: "A pristine EV with autopilot, glass roof, and dual motor all-wheel drive."
@@ -67,7 +81,14 @@ const fallbackCars = [
       color: "Navarra Blue",
       ownerCount: 2
     },
-    status: "available",
+    documents: {
+      rc: "",
+      insurance: "",
+      idProof: ""
+    },
+    documentStatus: "verified",
+    status: "verified",
+    availabilityStatus: "available",
     verified: true,
     isAuction: true,
     auctionEndsAt: new Date(Date.now() + 1000 * 60 * 60 * 8),

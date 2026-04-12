@@ -36,15 +36,26 @@ function CheckoutPage() {
       }
 
       setLoading(true);
-      const carData = await getCarById(carId);
+      const carData = await getCarById(carId, token);
       setCar(carData || null);
       setLoading(false);
     };
 
     loadCar();
-  }, [carId]);
+  }, [carId, token]);
 
   const finalAmount = checkoutType === "buy" ? car?.price || 0 : requestedAmount;
+  const inspectionStatus = car?.status || (car?.verified ? "verified" : "pending");
+  const documentStatus = car?.documentStatus || (inspectionStatus === "verified" ? "verified" : "pending");
+  const availabilityStatus = car?.availabilityStatus || "available";
+  const checkoutBlockedReason =
+    documentStatus !== "verified"
+      ? "This vehicle's documents have not been verified yet."
+      : inspectionStatus !== "verified"
+      ? "This vehicle has not been verified by an inspector yet."
+      : availabilityStatus !== "available"
+        ? `This vehicle is currently ${availabilityStatus} and cannot be checked out.`
+        : "";
 
   const handleCheckout = async () => {
     if (!token) {
@@ -59,6 +70,11 @@ function CheckoutPage() {
 
     if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
       setMessage("Please provide a valid amount before continuing.");
+      return;
+    }
+
+    if (checkoutBlockedReason) {
+      setMessage(checkoutBlockedReason);
       return;
     }
 
@@ -309,7 +325,7 @@ function CheckoutPage() {
             </div>
           </div>
 
-          <Button onClick={handleCheckout} className="mt-6 w-full">
+          <Button onClick={handleCheckout} className="mt-6 w-full" disabled={Boolean(checkoutBlockedReason)}>
             {checkoutType === "buy" ? "Pay and Confirm Purchase" : "Pay and Place Bid"}
           </Button>
           <Button as={Link} to={`/cars/${car._id}`} variant="secondary" className="mt-3 w-full">
@@ -319,6 +335,12 @@ function CheckoutPage() {
           {message && (
             <div className="mt-4 rounded-3xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200">
               {message}
+            </div>
+          )}
+
+          {checkoutBlockedReason && !message && (
+            <div className="mt-4 rounded-3xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm text-amber-100">
+              {checkoutBlockedReason}
             </div>
           )}
         </div>

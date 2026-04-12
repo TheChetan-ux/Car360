@@ -59,12 +59,42 @@ const carSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    documents: {
+      rc: {
+        type: String,
+        default: "",
+      },
+      insurance: {
+        type: String,
+        default: "",
+      },
+      idProof: {
+        type: String,
+        default: "",
+      },
+    },
+    documentStatus: {
+      type: String,
+      enum: ["pending", "verified", "rejected"],
+      default: "pending",
+    },
+    status: {
+      type: String,
+      enum: ["pending", "verified", "rejected"],
+      default: "pending",
+    },
     isAuction: {
       type: Boolean,
       default: false,
     },
+    auctionEndTime: Date,
+    auctionStatus: {
+      type: String,
+      enum: ["active", "ended"],
+      default: "ended",
+    },
     auctionEndsAt: Date,
-    status: {
+    availabilityStatus: {
       type: String,
       enum: ["available", "sold", "reserved"],
       default: "available",
@@ -75,7 +105,18 @@ const carSchema = new mongoose.Schema(
   }
 );
 
+carSchema.pre("save", function syncVerificationState(next) {
+  this.verified = this.status === "verified";
+
+  if (this.isAuction) {
+    this.auctionStatus = this.auctionStatus || "active";
+  } else {
+    this.auctionStatus = "ended";
+  }
+
+  next();
+});
+
 const Car = mongoose.model("Car", carSchema);
 
 export default Car;
-

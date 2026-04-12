@@ -19,13 +19,15 @@ function AuthPage() {
     e.preventDefault();
 
     try {
+      let response;
+
       if (mode === "login") {
-        await login({ email: form.email, password: form.password });
+        response = await login({ email: form.email, password: form.password });
       } else {
-        await register(form);
+        response = await register(form);
       }
 
-      navigate("/dashboard");
+      navigate(response?.user?.role === "inspector" ? "/inspector" : "/dashboard");
     } catch (error) {
       setMessage(error.response?.data?.message || "Authentication failed.");
     }
@@ -97,6 +99,7 @@ function AuthPage() {
                 <option value="buyer">Buyer</option>
                 <option value="seller">Seller</option>
                 <option value="dealer">Dealer</option>
+                <option value="inspector">Inspector</option>
               </select>
             </label>
           )}
@@ -113,4 +116,3 @@ function AuthPage() {
 }
 
 export default AuthPage;
-

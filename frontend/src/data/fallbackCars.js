@@ -8,6 +8,14 @@ const fallbackCars = [
     fuelType: "Diesel",
     transmission: "Automatic",
     mileage: 32000,
+    documents: {
+      rc: "",
+      insurance: "",
+      idProof: "",
+    },
+    documentStatus: "verified",
+    status: "verified",
+    availabilityStatus: "available",
     verified: true,
     isAuction: true,
     images: [
@@ -23,6 +31,14 @@ const fallbackCars = [
     fuelType: "Electric",
     transmission: "Automatic",
     mileage: 18000,
+    documents: {
+      rc: "",
+      insurance: "",
+      idProof: "",
+    },
+    documentStatus: "verified",
+    status: "verified",
+    availabilityStatus: "available",
     verified: true,
     isAuction: false,
     images: [
@@ -38,6 +54,14 @@ const fallbackCars = [
     fuelType: "Petrol",
     transmission: "Automatic",
     mileage: 41000,
+    documents: {
+      rc: "",
+      insurance: "",
+      idProof: "",
+    },
+    documentStatus: "verified",
+    status: "verified",
+    availabilityStatus: "available",
     verified: true,
     isAuction: true,
     images: [
@@ -47,4 +71,3 @@ const fallbackCars = [
 ];
 
 export default fallbackCars;
-

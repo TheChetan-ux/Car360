@@ -7,6 +7,9 @@ import authRoutes from "./routes/authRoutes.js";
 import carRoutes from "./routes/carRoutes.js";
 import auctionRoutes from "./routes/auctionRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
+import inspectorRoutes from "./routes/inspectorRoutes.js";
+import documentRoutes from "./routes/documentRoutes.js";
+import { uploadsDir } from "./middleware/uploadMiddleware.js";
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
 
 dotenv.config();
@@ -21,6 +24,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use("/uploads", express.static(uploadsDir));
 
 app.get("/api/health", (_req, res) => {
   const readyStates = {
@@ -41,6 +45,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/cars", carRoutes);
 app.use("/api/auctions", auctionRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/inspector", inspectorRoutes);
+app.use("/api/documents", documentRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

@@ -13,18 +13,32 @@ const authHeader = (token) => ({
   },
 });
 
-export const getCars = async (params = {}) => {
+const withAuth = (token, config = {}) => {
+  if (!token) {
+    return config;
+  }
+
+  return {
+    ...config,
+    headers: {
+      ...(config.headers || {}),
+      Authorization: `Bearer ${token}`,
+    },
+  };
+};
+
+export const getCars = async (params = {}, token) => {
   try {
-    const { data } = await client.get("/cars", { params });
+    const { data } = await client.get("/cars", withAuth(token, { params }));
     return data.cars;
   } catch (_error) {
     return fallbackCars;
   }
 };
 
-export const getCarById = async (id) => {
+export const getCarById = async (id, token) => {
   try {
-    const { data } = await client.get(`/cars/${id}`);
+    const { data } = await client.get(`/cars/${id}`, withAuth(token));
     return data.car;
   } catch (_error) {
     return fallbackCars.find((car) => car._id === id);
@@ -33,6 +47,19 @@ export const getCarById = async (id) => {
 
 export const createCar = async (payload, token) => {
   const { data } = await client.post("/cars", payload, authHeader(token));
+  return data.car;
+};
+
+export const uploadCarDocuments = async (id, files, token) => {
+  const formData = new FormData();
+
+  Object.entries(files).forEach(([key, file]) => {
+    if (file) {
+      formData.append(key, file);
+    }
+  });
+
+  const { data } = await client.post(`/cars/${id}/documents`, formData, authHeader(token));
   return data.car;
 };
 
@@ -83,4 +110,29 @@ export const getSellerDashboard = async (token) => {
 export const getAdminDashboard = async (token) => {
   const { data } = await client.get("/dashboard/admin", authHeader(token));
   return data.dashboard;
+};
+
+export const getPendingInspectionCars = async (token) => {
+  const { data } = await client.get("/inspector/cars/pending", authHeader(token));
+  return data.cars;
+};
+
+export const verifyInspectionCar = async (id, token) => {
+  const { data } = await client.put(`/inspector/car/${id}/verify`, {}, authHeader(token));
+  return data.car;
+};
+
+export const rejectInspectionCar = async (id, token) => {
+  const { data } = await client.put(`/inspector/car/${id}/reject`, {}, authHeader(token));
+  return data.car;
+};
+
+export const verifyCarDocuments = async (id, token) => {
+  const { data } = await client.put(`/documents/${id}/verify`, {}, authHeader(token));
+  return data.car;
+};
+
+export const rejectCarDocuments = async (id, token) => {
+  const { data } = await client.put(`/documents/${id}/reject`, {}, authHeader(token));
+  return data.car;
 };

@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import CarCard from "../components/CarCard";
 import FilterSidebar from "../components/FilterSidebar";
 import Loader from "../components/Loader";
+import { useAuth } from "../context/AuthContext";
 import { getCars } from "../services/api";
 
 function BrowseCars() {
+  const { token } = useAuth();
   const [filters, setFilters] = useState({
     brand: "",
     fuelType: "",
@@ -19,13 +21,13 @@ function BrowseCars() {
       const data = await getCars({
         ...filters,
         isAuction: filters.isAuction || undefined,
-      });
+      }, token);
       setCars(data);
       setLoading(false);
     };
 
     loadCars();
-  }, [filters]);
+  }, [filters, token]);
 
   return (
     <div className="shell grid gap-8 lg:grid-cols-[280px,1fr]">
@@ -40,6 +42,11 @@ function BrowseCars() {
 
         {loading ? (
           <Loader lines={6} />
+        ) : cars.length === 0 ? (
+          <div className="panel p-8">
+            <h2 className="text-2xl font-semibold">No cars match this view</h2>
+            <p className="mt-3 muted">Verified marketplace listings will appear here once they pass inspection or once your filters are adjusted.</p>
+          </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {cars.map((car) => (
@@ -53,4 +60,3 @@ function BrowseCars() {
 }
 
 export default BrowseCars;
-
